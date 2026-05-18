@@ -10,6 +10,7 @@ import task.model.UserPreference;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 public class NotificationService {
 
@@ -29,12 +30,27 @@ public class NotificationService {
         NotificationHistoryItem notificationHistoryItem = notificationHistory.notificationHistoryItem();
 
         return request.notifications().stream()
-                .filter(n -> !userPreference.blockedUsersIds().contains(n.recipientId()))
-                .filter(n -> userPreference.types().contains(n.notificationType()))
-                .filter(n -> !notificationHistoryItem.notificationsIds().contains(n.id()))
-                .filter(n -> !notificationHistoryItem.notificationDate().isAfter(LocalDateTime.now().minusDays(1)))
-                .toList();
-
+                .filter(n ->
+                        Optional.ofNullable(userPreference)
+                                .map(UserPreference::blockedUsersIds)
+                                .map(ids -> !ids.contains(n.recipientId()))
+                                .orElse(false))
+                .filter(n ->
+                        Optional.ofNullable(userPreference)
+                                .map(UserPreference::types)
+                                .map(types -> types.contains(n.notificationType()))
+                                .orElse(false))
+                .filter(n ->
+                        Optional.ofNullable(notificationHistoryItem)
+                                .map(NotificationHistoryItem::notificationsIds)
+                                .map(ids -> !ids.contains(n.id()))
+                                .orElse(false))
+                .filter(n ->
+                        Optional.ofNullable(notificationHistoryItem)
+                                .map(NotificationHistoryItem::notificationDate)
+                                .map(date -> !date.isAfter(LocalDateTime.now().minusDays(1)))
+                                .orElse(false)).toList();
     }
+
 
 }
